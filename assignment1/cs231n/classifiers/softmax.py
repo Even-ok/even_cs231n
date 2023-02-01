@@ -33,7 +33,29 @@ def softmax_loss_naive(W, X, y, reg):
     # regularization!                                                           #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    num_classes = W.shape[1]
+    num_train = X.shape[0]
+    loss = 0.0
+    for i in range(num_train):  # for every sample
+        scores = X[i].dot(W)   # (10,)  score for every class of 1 sample
+        scores -= np.max(scores) 
+        p = np.exp(scores) / np.sum(np.exp(scores)) # safe to do, gives the correct answer
+        true_label = y[i]
+        loss += -np.log(p[true_label])
+        for j in range(num_classes):
+            if j == y[i]:
+                dW[:, j] += (p[j]-1) * X[i]
+            else:
+                dW[:, j] += p[j] * X[i]
 
+    # Right now the loss is a sum over all training examples, but we want it
+    # to be an average instead so we divide by num_train.
+    loss /= num_train
+    dW /= num_train
+
+    # Add regularization to the loss.
+    loss += 1/2 * reg * np.sum(W * W)   # Default C = 1/2 (\lambda = 1/2C = 1)
+    dW += reg * W
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -59,7 +81,22 @@ def softmax_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    num_train = X.shape[0]
+    scores = X.dot(W)   # (10,)  score for every class of 1 sample
+    margin = np.max(scores, axis=1).reshape(-1, 1)
+    scores = scores - margin
+
+    p = np.exp(scores) / np.sum(np.exp(scores), axis=1).reshape(-1, 1) # safe to do, gives the correct answer  (500, 10)
+    y = y.astype('int32')
+    loss = -np.sum(np.log(p[range(num_train), y]))
+    loss /= num_train
+    loss += 1/2 * reg * np.sum(W * W) 
+
+    p[range(num_train), y] -= 1
+    dW += np.dot(X.T, p)
+    dW /= num_train
+    dW += reg * W
+
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 

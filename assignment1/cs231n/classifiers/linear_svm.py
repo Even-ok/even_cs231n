@@ -37,7 +37,7 @@ def svm_loss_naive(W, X, y, reg):
             margin = scores[j] - correct_class_score + 1  # note delta = 1   hinge loss
             if margin > 0:
                 loss += margin
-                dW[:, j] += X[i]  # For every class, sum them。前面有一个累加的符号，对于loss是这样，对于梯度也是这样。
+                dW[:, j] += X[i]  # For every class, sum them。前面有一个累加的符号，对于loss是这样，对于梯度也是这样。  意思是第i个样本，对于第j个W的梯度
                 dW[:, int(y[i])] += -X[i]
 
     # Right now the loss is a sum over all training examples, but we want it
@@ -46,8 +46,8 @@ def svm_loss_naive(W, X, y, reg):
     dW /= num_train
 
     # Add regularization to the loss.
-    loss += reg * np.sum(W * W)   # Default C = 1/2 (\lambda = 1/2C = 1)
-    dW += 2 * reg * W
+    loss += 1/2 * reg * np.sum(W * W)   # Default C = 1/2 (\lambda = 1/2C = 1)
+    dW += reg * W
 
     #############################################################################
     # TODO:                                                                     #
@@ -84,7 +84,7 @@ def svm_loss_vectorized(W, X, y, reg):
     scores = X.dot(W)  # (500, 10)
     
     y = y.astype('int32')
-    correct_score = scores[np.arange(num_train), y].reshape(num_train, 1)  # 太强了，在每个y的前面再加一个系数
+    correct_score = scores[np.arange(num_train), y].reshape(num_train, 1)  # 变成二维数组（一列），广播
     loss_class_wise = np.maximum(0, scores - correct_score + 1)
     loss_class_wise[np.arange(num_train), y] = 0
     loss = np.sum(loss_class_wise) / num_train
@@ -101,13 +101,6 @@ def svm_loss_vectorized(W, X, y, reg):
     # loss.                                                                     #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    # Identity = np.ones(W.shape)
-    # Identity[np.arange(num_train), y] = -1
-    # dW = np.sum(X * Identity, axis=1) / num_train + 2 * reg * W
-
-
-    #### 学习一下这个计算函数！！  ###
     margins = loss_class_wise
     margins[margins > 0] = 1.0                         # 示性函数的意义
     row_sum = np.sum(margins, axis=1)                  # 1 by N
