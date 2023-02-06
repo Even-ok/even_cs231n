@@ -2,12 +2,8 @@ from builtins import range
 from builtins import object
 import numpy as np
 
-# from ..layers import *
-# from ..layer_utils import *
-import sys
-sys.path.append('/home/PJLAB/liangyiwen/Even/techLearning/cs231n/assignment1/cs231n/')
-from layers import *
-from layer_utils import *
+from ..layers import *
+from ..layer_utils import *
 
 class TwoLayerNet(object):
     """
@@ -97,7 +93,7 @@ class TwoLayerNet(object):
         # aff1_output = X.dot(self.params['W1']) + self.params['b1']
         aff1_relu_output, cache1 = affine_relu_forward(X, self.params['W1'], self.params['b1'])
         aff2_output = affine_forward(aff1_relu_output, self.params['W2'], self.params['b2'])
-        scores = aff2_output
+        scores, aff2_cache = aff2_output
 
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -126,11 +122,10 @@ class TwoLayerNet(object):
         loss += 0.5 * self.reg * (np.sum(self.params["W1"] ** 2) + \
                                   np.sum(self.params["W2"] ** 2))
 
-        dx_hidden, grads["W2"], grads["b2"] = affine_backward(dout, (aff1_relu_output,self.params["W1"], self.params["W2"]))
-
-
-        # aff1_relu_back = relu_backward(dx_hidden, aff1_output)
-        # _, grads["W1"], grads["b1"] = affine_backward(aff1_relu_back, X)
+        dx_hidden, grads["W2"], grads["b2"] = affine_backward(dout, aff2_cache)
+        dx, grads["W1"], grads["b1"] = affine_relu_backward(dx_hidden, cache1)
+        grads["W1"] += self.reg * self.params["W1"]
+        grads["W2"] += self.reg * self.params["W2"]
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################

@@ -136,7 +136,7 @@ class Solver(object):
 
         # Throw an error if there are extra keyword arguments
         if len(kwargs) > 0:
-            extra = ", ".join('"%s"' % k for k in list(kwargs.keys()))
+            extra = ", ".join('"%s"' % k for k in list(kwargs.keys()))  # $后面接真实值！
             raise ValueError("Unrecognized arguments %s" % extra)
 
         # Make sure the update rule exists, then replace the string
@@ -251,6 +251,7 @@ class Solver(object):
 
         return acc
 
+    # TODO: 读一下train的过程，然后写一下optim.py
     def train(self):
         """
         Run optimization to train the model.
