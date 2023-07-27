@@ -65,12 +65,10 @@ def affine_backward(dout, cache):
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     n_samples = x.shape[0]
-    dx = dout.dot(w.T)
+    dx = dout.dot(w.T)  # 注意dw和dx的维度！ 
     dx = dx.reshape(x.shape)
     x_reshape = x.copy().reshape(n_samples, -1)
     dw = (x_reshape.T).dot(dout)
-
-    db = np.sum(dout,axis = 0)# 注意加法门的均分性
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################

@@ -25,7 +25,10 @@ def affine_forward(x, w, b):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    num_samples = x.shape[0]
+    x_reshape = x.copy().reshape(num_samples, -1)
+    out = x_reshape.dot(w)
+    out = out + b.reshape(1, len(b))
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -57,7 +60,12 @@ def affine_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    n_samples = x.shape[0]
+    dx = dout.dot(w.T)
+    dx = dx.reshape(x.shape)
+    x_reshape = x.copy().reshape(n_samples, -1)
+    dw = (x_reshape.T).dot(dout)
+    db = np.sum(dout, axis = 0)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -82,7 +90,8 @@ def relu_forward(x):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    out = x.copy()
+    out[out<0] = 0
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -108,7 +117,8 @@ def relu_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    dx = dout.copy()
+    dx[x < 0] = 0 # x小于0的位置标志为0
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -137,7 +147,18 @@ def softmax_loss(x, y):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    num_train = x.shape[0]
+    margin = np.max(x, axis=1).reshape(-1, 1)
+    shift_scores = x - margin
+
+    p = np.exp(shift_scores) / np.sum(np.exp(shift_scores), axis=1).reshape(-1, 1) # safe to do, gives the correct answer  (500, 10)
+    y = y.astype('int32')
+    loss = -np.sum(np.log(p[range(num_train), y]))
+    loss /= num_train
+
+    p[range(num_train), y] -= 1
+    dx = p
+    dx /= num_train
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################

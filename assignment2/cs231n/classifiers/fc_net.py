@@ -76,20 +76,20 @@ class FullyConnectedNet(object):
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
         self.params['W1'] = weight_scale* np.random.randn(input_dim,hidden_dims[0])
-        self.params['b1'] = np.zeros(1)
-        for i in range(1, len(hidden_dims)):
-            self.params['W' + str(i+1)] = weight_scale* np.random.randn(hidden_dims[i-1],hidden_dims[i])
-            self.params['b' + str(i+1)] = np.zeros(1)
+        self.params['b1'] = np.zeros(hidden_dims[0])
+        for i in range(2, self.num_layers):
+            self.params['W%d' % (i)] = weight_scale* np.random.randn(hidden_dims[i-2],hidden_dims[i-1])
+            self.params['b%d' % (i)] = np.zeros(hidden_dims[i-1])
             
-        self.params['W' + str(i+1)] = weight_scale* np.random.randn(hidden_dims[i],num_classes)
-        self.params['b' + str(i+1)] = np.zeros(1)
+        self.params['W%d' % self.num_layers] = weight_scale* np.random.randn(hidden_dims[-1],num_classes)
+        self.params['b%d' % self.num_layers] = np.zeros(num_classes)
             
+        # 这个部分应该和上面合并起来的，更好！ 
         if self.normalization == 'batchnorm':
-            for i in range(1, len(hidden_dims)):
-                self.params['gamma' + str(i)] = np.ones(1)
-                self.params['beta' + str(i)] = np.zeros(1)
+            for i in range(1, self.num_layers):
+                self.params['gamma%d'% i] = np.ones(hidden_dims[i-1])
+                self.params['beta%d'% i] = np.zeros(hidden_dims[i-1])
             
-
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -161,8 +161,36 @@ class FullyConnectedNet(object):
         # layer, etc.                                                              #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
+        aff_cache_list = [] # 用来存每一层输入的cache
+        bn_cache_list = []
+        relu_cache_list = []
+        dp_cache_list = []
+        layer_in = X.copy()
+        last = self.num_layers
+        for i in range(1, last): 
+            # 把每一层的cache保存起来，cache就是每一层的输入
+            aff_output , cache = affine_forward(layer_in, self.params['W%d'% i], self.params['b%d'% i])
+            aff_cache_list.append(cache)
+            # batchnorm
+            if self.normalization == "batchnorm":
+                bn_output, bncache = batchnorm_forward(aff_output, self.params['gamma%d'% i], 
+                                                    self.params['beta%d'% i], self.bn_params[i-1])
+                bn_cache_list.append(bn_output, bncache)
+            else:
+                bn_output = aff_output
+            # relu
+            relu_output, relu_cache = relu_forward(bn_output)
+            relu_cache_list.append(relu_cache)
+            # dropout
+            if self.use_dropout: 
+                dp_output, dp_cache = dropout_forward(relu_output, self.dropout_param)
+                dp_cache_list.append(dp_cache)
+            else:
+                dp_output = relu_output
+                
+            layer_in = dp_output
+            
+        scores, aff_last_cache = affine_forward(layer_in, self.params['W%d'% last], self.params['b%d'% last])   
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -189,7 +217,28 @@ class FullyConnectedNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        loss, dout = softmax_loss(scores, y) 
+        
+        # loss是单独算的，没有问题
+        for i in range(1, last+1):
+            loss += 0.5 * self.reg * np.sum(self.params["W%d" %i] ** 2)
+
+        dx, grads["W%d" % last], grads["b%d" % last] = affine_backward(dout, aff_last_cache)
+        grads["W%d" % last] += self.reg * self.params["W%d" % last]  # 注意，只有w需要加regu
+
+        for i in range(last-1, 0, -1):
+            # dropout
+            if self.use_dropout:
+                dx = dropout_backward(dx, dp_cache_list[i-1])
+            # relu
+            dx = relu_backward(dx, relu_cache_list[i-1])
+            # batchnorm
+            if self.normalization == 'batchnorm':
+                dx, grads["gamma%d"% i], grads["beta%d"% i] = batchnorm_backward(dx, bn_cache_list[i-1])
+            # affine
+            dx, grads["W%d" % i], grads["b%d" % i]  = affine_backward(dx, aff_cache_list[i-1])
+            # print(grads["W%d" % i], grads["b%d" % i])
+            grads["W%d" % i] += self.reg * self.params["W%d" % i]
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
