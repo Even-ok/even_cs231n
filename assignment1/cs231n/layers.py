@@ -784,7 +784,19 @@ def svm_loss(x, y):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    num_train = x.shape[0]
+    y = y.astype('int32')
+    correct_score = x[np.arange(num_train), y].reshape(num_train, 1)  # 变成二维数组（一列），广播
+    loss_class_wise = np.maximum(0, x - correct_score + 1)
+    loss_class_wise[np.arange(num_train), y] = 0
+    loss = np.sum(loss_class_wise) / num_train
+
+    margins = loss_class_wise
+    margins[margins > 0] = 1.0      
+    row_sum = np.sum(margins, axis=1)                  # 统计每一行有多少个大于0的
+    dx = margins
+    dx[np.arange(num_train), y] = -row_sum  
+    dx /= num_train       # 别忘了除以一下训练样本个数   
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -814,7 +826,18 @@ def softmax_loss(x, y):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    num_train = x.shape[0]
+    margin = np.max(x, axis=1).reshape(-1, 1)
+    shift_scores = x - margin
+
+    p = np.exp(shift_scores) / np.sum(np.exp(shift_scores), axis=1).reshape(-1, 1) # safe to do, gives the correct answer  (500, 10)
+    y = y.astype('int32')
+    loss = -np.sum(np.log(p[range(num_train), y]))
+    loss /= num_train
+
+    p[range(num_train), y] -= 1
+    dx = p
+    dx /= num_train
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
