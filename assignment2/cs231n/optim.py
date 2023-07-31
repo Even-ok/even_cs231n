@@ -41,7 +41,7 @@ def sgd(w, dw, config=None):
         config = {}
     config.setdefault("learning_rate", 1e-2)
 
-    w -= config["learning_rate"] * dw
+    w -= config["learning_rate"] * dw # 梯度的负方向
     return w, config
 
 
@@ -68,8 +68,10 @@ def sgd_momentum(w, dw, config=None):
     # the next_w variable. You should also use and update the velocity v.     #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
+    mu = config.get("momentum")
+    lr = config.get("learning_rate")
+    v = mu * v - lr * dw  # 这个变量mu会降低系统的动能，抑制速度
+    next_w = w + v
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -84,6 +86,7 @@ def rmsprop(w, dw, config=None):
     """
     Uses the RMSProp update rule, which uses a moving average of squared
     gradient values to set adaptive per-parameter learning rates.
+    # 它避免了单调递减的学习率
 
     config format:
     - learning_rate: Scalar learning rate.
@@ -107,7 +110,10 @@ def rmsprop(w, dw, config=None):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    cache = config.get("decay_rate") * config.get("cache") + \
+      (1-config.get("decay_rate")) * dw **2
+    next_w = w - config.get("learning_rate") * dw / (np.sqrt(cache) + config.get("epsilon"))
+    config['cache'] = cache 
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -152,7 +158,21 @@ def adam(w, dw, config=None):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # t is your iteration counter going from 1 to infinity
+    m = config.get("m")
+    beta1 = config.get("beta1")
+    beta2 = config.get("beta2")
+    t = config.get("t")
+    t = t + 1
+    v = config.get("v")
+    m = beta1*m + (1-beta1)*dw
+    mt = m / (1-beta1**t)
+    v = beta2*v + (1-beta2)*(dw**2)
+    vt = v / (1-beta2**t)
+    next_w = w - config.get("learning_rate") * mt / (np.sqrt(vt) + config.get("epsilon"))
+    config["m"] = m
+    config["v"] = v
+    config["t"] = t
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
